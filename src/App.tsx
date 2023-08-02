@@ -4,14 +4,13 @@ import {
   Col,
   Layout,
   List,
-  Menu,
   Row,
   Skeleton,
   Typography,
   message,
 } from "antd";
 import Link from "antd/es/typography/Link";
-import YouTube from "react-youtube";
+import YouTube, { YouTubeEvent } from "react-youtube";
 const { Header, Content } = Layout;
 interface IVideoMetaData {
   name?: string;
@@ -46,9 +45,11 @@ const App: React.FC = () => {
     setVideoLoading(false);
   }, []);
 
-  const handleLoadMore = () => {
+  const handleLoadMore = async () => {
     setLoading(true);
+    setVideoLoading(true);
     setList((prevList) => [...prevList, ...youtubeVideos]);
+    setVideoLoading(false);
     setLoading(false);
     // return false
     // Resetting window's offsetTop so as to display react-virtualized demo underfloor.
@@ -85,8 +86,8 @@ const App: React.FC = () => {
       message.error(`Lỗi khi chuyển video:`);
     }
   };
-  const handleVideoError = async (error: any) => {
-    message.error(`Lỗi của video: ${error}`);
+  const handleVideoError = async (error: YouTubeEvent<number>) => {
+    message.error(`Lỗi của video: ${JSON.stringify(error.target)}`);
     await changeVideo();
   };
   const handleVideoEnded = async () => {

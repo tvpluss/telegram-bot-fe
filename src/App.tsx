@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Avatar, Button, Col, Layout, List, Menu, Row, Skeleton } from "antd";
+import { Button, Col, Layout, List, Menu, Row } from "antd";
 import Link from "antd/es/typography/Link";
 
 const { Header, Content } = Layout;

@@ -1,87 +1,65 @@
 import React, { useEffect, useState } from "react";
-import {
-  Button,
-  Col,
-  Layout,
-  List,
-  Row,
-  Skeleton,
-  Typography,
-  message,
-} from "antd";
+import { Col, Layout, List, Row, Skeleton, Typography, message } from "antd";
 import Link from "antd/es/typography/Link";
 import YouTube, { YouTubeEvent } from "react-youtube";
+import axios from "axios";
+import { BACKEND_URL } from "./constants";
 const { Header, Content } = Layout;
-interface IVideoMetaData {
-  name?: string;
-  videoId?: string;
-  loading?: boolean;
-}
-const youtubeVideos: Array<IVideoMetaData> = [
-  {
-    name: "Tay Trái Chỉ Trăng ",
-    videoId: "ATPulcGQ2SE",
-  },
-  {
-    name: "Ngày ấy",
-    videoId: "aWNu0BHuHws",
-  },
-  {
-    name: "You will always...",
-    videoId: "xpHmDZfg6z4",
-  },
-];
-
 const App: React.FC = () => {
   const [initLoading, setInitLoading] = useState(true);
-  const [loading, setLoading] = useState(false);
   const [videoLoading, setVideoLoading] = useState(true);
-  const [list, setList] = useState<IVideoMetaData[]>([]);
-  const [curVideo, setCurVideo] = useState<IVideoMetaData>({});
+  const [list, setList] = useState([]);
+  const [curVideo, setCurVideo] = useState("");
+  const getNextVideoId = async () => {
+    try {
+      const res = await axios.get(`${BACKEND_URL}/play`);
+      if (res.data.video) {
+        const url = new URL(res.data.video);
+        console.log({ url });
+        return url.searchParams.get("v");
+      }
+    } catch (error) {
+      message.error(`Hết bài rồi`);
+    }
+  };
+  const getPendingVideoIds = async () => {
+    const res = await axios.get(`${BACKEND_URL}/videos`);
+    return res.data.videos.map((video: string) => {
+      const url = new URL(video);
+      return url.searchParams.get("v");
+    });
+  };
   useEffect(() => {
     setInitLoading(false);
-    setList(youtubeVideos.slice(1));
-    setCurVideo(youtubeVideos[0]);
+    setVideoLoading(true);
+    const fetchData = async () => {
+      const nextVideo = await getNextVideoId();
+      const pendingVideos = await getPendingVideoIds();
+      if (nextVideo) {
+        setCurVideo(nextVideo);
+        setList(pendingVideos);
+      } else {
+        message.info(`Hết bài hát rồi`, 10);
+      }
+    };
+
+    fetchData();
     setVideoLoading(false);
   }, []);
 
-  const handleLoadMore = async () => {
-    setLoading(true);
-    setVideoLoading(true);
-    setList((prevList) => [...prevList, ...youtubeVideos]);
-    setVideoLoading(false);
-    setLoading(false);
-    // return false
-    // Resetting window's offsetTop so as to display react-virtualized demo underfloor.
-    // In real scene, you can using public method of react-virtualized:
-    // https://stackoverflow.com/questions/46700726/how-to-use-public-method-updateposition-of-react-virtualized
-    window.dispatchEvent(new Event("resize"));
-    return true;
-  };
-  const loadMore =
-    !initLoading && !loading ? (
-      <div
-        style={{
-          textAlign: "center",
-          marginTop: 12,
-          height: 32,
-          lineHeight: "32px",
-        }}
-      >
-        <Button onClick={handleLoadMore}>loading more</Button>
-      </div>
-    ) : null;
   const changeVideo = async () => {
     try {
-      if (list.length == 0) {
-        message.info(`Đã hết video trong queue`);
-        return;
-      }
       setVideoLoading(true);
-      setCurVideo(list[0]);
-      setList(list.slice(1));
+      const nextVideo = await getNextVideoId();
+      const pendingVideos = await getPendingVideoIds();
+      if (nextVideo) {
+        setCurVideo(nextVideo);
+        setList(pendingVideos);
+      } else {
+        message.info(`Hết bài hát rồi`);
+      }
       setVideoLoading(false);
-      message.info(`Kết thúc video`);
+      message.info(`Kết thúc video, chuyển bài...`);
     } catch (error) {
       message.error(`Lỗi khi chuyển video:`);
     }
@@ -126,7 +104,7 @@ const App: React.FC = () => {
             <Typography.Title level={2}>Current Video</Typography.Title>
             <Skeleton active loading={videoLoading}>
               <YouTube
-                videoId={curVideo.videoId}
+                videoId={curVideo}
                 opts={opts}
                 onEnd={handleVideoEnded}
                 onError={handleVideoError}
@@ -139,7 +117,6 @@ const App: React.FC = () => {
               className="demo-loadmore-list"
               loading={initLoading}
               itemLayout="horizontal"
-              loadMore={loadMore}
               dataSource={list}
               renderItem={(item) => (
                 <List.Item
@@ -149,8 +126,8 @@ const App: React.FC = () => {
                   ]}
                 >
                   <List.Item.Meta
-                    title={<a href="https://ant.design">{item.name}</a>}
-                    description={<Link>{item.videoId}</Link>}
+                    title={<a href="https://ant.design">{item}</a>}
+                    description={<Link>{item}</Link>}
                   />
                 </List.Item>
               )}

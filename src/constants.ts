@@ -1,1 +1,1 @@
-export const BACKEND_URL = "https://tridentity-telegram-bot.fly.dev";
+export const BACKEND_URL = "https://trident-telegram-bot.fly.dev";
